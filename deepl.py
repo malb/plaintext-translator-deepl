@@ -35,27 +35,48 @@ def translate(line, to_language, from_language=None):
     if not translation:
         raise pydeepl.TranslationError
 
-    print(len(line.split(" ")), len(translation.split(" ")))
-
     return prefix + translation
+
+def count_words(text):
+    return len(text.split(" "))
+
+def split(line, sentence_detector=None, max_words=60):
+    if sentence_detector is None:
+        sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+
+    line = sentence_detector.tokenize(line.strip())
+
+    line_ = []
+    for sentence in line:
+        if count_words(sentence) <= max_words:
+            line_.append(sentence)
+        else:
+            for part in sentence.split(";"):
+                if count_words(part) <= max_words:
+                    line_.append(part + ";")
+                else:
+                    for subpart in sentence.split(","):
+                        line_.append(subpart + ",")
+
+    return tuple(line_)
 
 @begin.start(auto_convert=True)
 def translate_file(filename, to_language="EN", from_language=None, limit=None):
 
     if from_language == "DE":
-        sent_detector = nltk.data.load('tokenizers/punkt/german.pickle')
+        sentence_detector = nltk.data.load('tokenizers/punkt/german.pickle')
     elif from_language == "EN":
-        sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+        sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
     elif from_language is None:  # yolo
-        sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+        sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 
     for line in read_file(filename, limit=limit):
         if line:
-            for sentence in sent_detector.tokenize(line.strip()):
+            for sentence in split(line.strip(), sentence_detector=sentence_detector):
                 try:
-                    print(translate(sentence, to_language, from_language), end='\n\n')
+                    print(translate(sentence, to_language, from_language), end=' ')
                 except pydeepl.TranslationError:
-                    print(sentence, end='\n')
+                    print(sentence, end=' ')
         else:
             print(line)
         print("")
