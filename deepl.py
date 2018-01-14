@@ -28,7 +28,15 @@ def translate(line, to_language, from_language=None):
         prefix = line[:2]
         line = line[2:]
 
-    translation = pydeepl.translate(line, to_language, from_lang=from_language)
+    try:
+        translation = pydeepl.translate(line, to_language, from_lang=from_language)
+    except (IndexError, pydeepl.TranslationError) as e:
+        raise pydeepl.TranslationError(e.message)
+    if not translation:
+        raise pydeepl.TranslationError
+
+    print(len(line.split(" ")), len(translation.split(" ")))
+
     return prefix + translation
 
 @begin.start(auto_convert=True)
@@ -44,11 +52,10 @@ def translate_file(filename, to_language="EN", from_language=None, limit=None):
     for line in read_file(filename, limit=limit):
         if line:
             for sentence in sent_detector.tokenize(line.strip()):
-                translation = translate(sentence, to_language, from_language)
-                if translation:
-                    print(translation, end=' ')
-                else:
-                    print(sentence, end=' ')
+                try:
+                    print(translate(sentence, to_language, from_language), end='\n\n')
+                except pydeepl.TranslationError:
+                    print(sentence, end='\n')
         else:
             print(line)
         print("")
