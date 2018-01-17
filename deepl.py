@@ -40,7 +40,7 @@ def translate(line, to_language, from_language=None):
 def count_words(text):
     return len(text.split(" "))
 
-def split(line, sentence_detector=None, max_words=60):
+def split(line, sentence_detector=None, max_words=80):
     if sentence_detector is None:
         sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 
